@@ -1,64 +1,52 @@
 # SigReactor — A Signal-Driven Event Framework
 
-## Overview
-
 SigReactor is a Linux-based event-driven framework written in C11.
+It combines I/O readiness, timers, signals, and process management
+through a single epoll-based event loop.
 
-It provides a unified epoll-based event loop for I/O readiness, timers, signals, and child processes.
+## Project Objective
 
-## Key Features
+The objective of SigReactor is to provide a simple event framework
+that can efficiently handle multiple asynchronous events without
+using separate blocking loops for each event source.
 
-- epoll-based event loop
-- TCP client/server communication
-- Periodic timers using timerfd
-- Safe signal handling using signalfd
-- SIGINT and SIGTERM clean shutdown
-- SIGCHLD child-process notification
+## Core Features
+
+- Linux epoll-based event loop
+- TCP server and client communication
+- Multiple client handling
+- Level-triggered event monitoring
+- Edge-triggered reactor API support
+- signalfd-based signal handling
+- SIGINT and SIGTERM graceful shutdown
+- SIGCHLD child-process monitoring
 - Child-process creation and reaping
-- EINTR handling
-- Clean resource cleanup
+- Periodic timer support
+- One-shot timer support
+- EINTR-safe system calls
+- Clean resource shutdown
+- Stress-testing support
 
-## Build
+## Architecture
 
-    make clean
-    make
-
-## Run Server
-
-    ./sigreactor_server
-
-## Run Client
-
-    ./sigreactor_client
-
-## Tests
-
-    ./test_timer
-    ./tests/test_handler
-    ./tests/test_process
-    ./demo/process_demo
-
-## Technologies
-
-- C11
-- Linux
-- epoll
-- timerfd
-- signalfd
-- TCP sockets
-- Processes
-- IPC
-- Concurrency
-
-## Team
-
-- G. Keerthi — 2500032083
-- T. Sahasra — 2500032211
-- K. Nansy — 2500032155
-
-## Project
-
-**SigReactor — A Signal-Driven Event Framework**
-
-OS & System Programming PBL
-Department of CSE
+```text
+                    +----------------------+
+                    |      SigReactor      |
+                    |     Event Loop       |
+                    +----------+-----------+
+                               |
+              +----------------+----------------+
+              |                |                |
+              v                v                v
+        +-----------+    +-----------+    +-----------+
+        | TCP I/O   |    |  Timers   |    | Signals   |
+        | epoll     |    | timerfd   |    | signalfd  |
+        +-----------+    +-----------+    +-----------+
+              |                |                |
+              +----------------+----------------+
+                               |
+                               v
+                    +----------------------+
+                    | Process Management   |
+                    | fork / exec / wait   |
+                    +----------------------+

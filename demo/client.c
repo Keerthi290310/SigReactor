@@ -5,14 +5,17 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 
+#define SERVER_IP "127.0.0.1"
 #define PORT 8080
+#define BUFFER_SIZE 1024
 
 int main(void)
 {
     int sock_fd;
     struct sockaddr_in server_addr;
-    char buffer[1024];
+    char buffer[BUFFER_SIZE];
 
+    /* Create TCP socket */
     sock_fd = socket(AF_INET, SOCK_STREAM, 0);
 
     if (sock_fd == -1)
@@ -21,18 +24,20 @@ int main(void)
         return 1;
     }
 
+    /* Configure server address */
     memset(&server_addr, 0, sizeof(server_addr));
 
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(PORT);
 
-    if (inet_pton(AF_INET, "127.0.0.1", &server_addr.sin_addr) <= 0)
+    if (inet_pton(AF_INET, SERVER_IP, &server_addr.sin_addr) <= 0)
     {
         perror("inet_pton");
         close(sock_fd);
         return 1;
     }
 
+    /* Connect to SigReactor server */
     if (connect(sock_fd,
                 (struct sockaddr *)&server_addr,
                 sizeof(server_addr)) == -1)
@@ -42,21 +47,50 @@ int main(void)
         return 1;
     }
 
-    printf("Connected to SigReactor server\n");
+    printf("====================================\n");
+    printf("       SigReactor Client\n");
+    printf("====================================\n");
+    printf("Connected to server: %s:%d\n", SERVER_IP, PORT);
 
+    /* Send message */
     const char *message = "Hello from client\n";
 
-    write(sock_fd, message, strlen(message));
+    ssize_t bytes_sent = write(sock_fd, message, strlen(message));
 
-    int bytes_read = read(sock_fd, buffer, sizeof(buffer) - 1);
+    if (bytes_sent == -1)
+    {
+        perror("write");
+        close(sock_fd);
+        return 1;
+    }
 
-    if (bytes_read > 0)
+    printf("Message sent: %s", message);
+
+    /* Receive server response */
+    ssize_t bytes_read = read(sock_fd, buffer, BUFFER_SIZE - 1);
+
+    if (bytes_read == -1)
+    {
+        perror("read");
+        close(sock_fd);
+        return 1;
+    }
+
+    if (bytes_read == 0)
+    {
+        printf("Server closed the connection.\n");
+    }
+    else
     {
         buffer[bytes_read] = '\0';
+
         printf("Server response: %s", buffer);
     }
 
+    /* Close connection */
     close(sock_fd);
+
+    printf("Connection closed.\n");
 
     return 0;
 }

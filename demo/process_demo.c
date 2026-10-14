@@ -1,4 +1,3 @@
-#define _DEFAULT_SOURCE
 #include "process.h"
 #include <stdio.h>
 #include <unistd.h>

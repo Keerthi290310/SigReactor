@@ -11,7 +11,8 @@ int reactor_create(void)
 {
     int epoll_fd = epoll_create1(0);
 
-    if (epoll_fd == -1) {
+    if (epoll_fd == -1)
+    {
         perror("epoll_create1");
         return -1;
     }
@@ -19,7 +20,9 @@ int reactor_create(void)
     return epoll_fd;
 }
 
-int reactor_add(int epoll_fd, int fd)
+int reactor_add_mode(int epoll_fd,
+                     int fd,
+                     int edge_triggered)
 {
     if (epoll_fd < 0 || fd < 0)
         return -1;
@@ -27,14 +30,33 @@ int reactor_add(int epoll_fd, int fd)
     struct epoll_event event;
 
     event.events = EPOLLIN;
+
+    if (edge_triggered)
+        event.events |= EPOLLET;
+
     event.data.fd = fd;
 
-    if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &event) == -1) {
+    if (epoll_ctl(epoll_fd,
+                  EPOLL_CTL_ADD,
+                  fd,
+                  &event) == -1)
+    {
         perror("epoll_ctl");
         return -1;
     }
 
     return 0;
+}
+
+int reactor_add(int epoll_fd, int fd)
+{
+    /*
+     * Default mode is Level Triggered.
+     * Existing applications remain compatible.
+     */
+    return reactor_add_mode(epoll_fd,
+                            fd,
+                            REACTOR_LEVEL_TRIGGERED);
 }
 
 int reactor_add_signal(int epoll_fd)
@@ -47,12 +69,14 @@ int reactor_add_signal(int epoll_fd)
 
     int signal_fd = reactor_signal_fd();
 
-    if (signal_fd < 0) {
+    if (signal_fd < 0)
+    {
         reactor_signal_cleanup();
         return -1;
     }
 
-    if (reactor_add(epoll_fd, signal_fd) == -1) {
+    if (reactor_add(epoll_fd, signal_fd) == -1)
+    {
         reactor_signal_cleanup();
         return -1;
     }
